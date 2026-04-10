@@ -1,7 +1,8 @@
 ### Gacha System
+### Garry Malvin Jiu - 535250077 - TI B
 - **Don't forget tambahin localportnya, unedited seharusnya 5000**
 - **POST /api/gacha**
-  - Localhost:500/api/gacha
+  - Localhost:5000/api/gacha
   - Ngepull cuy
   - Body: `{ "userId": "string" }`
   - Response: Prize won or no prize message.
