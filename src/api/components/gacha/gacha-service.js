@@ -1,5 +1,7 @@
 const GachaRepository = require('./gacha-repository');
 
+const NO_PRIZE_CHANCE = 0.2; // 20% chance to win nothing even when prizes remain
+
 class GachaService {
   constructor() {
     this.repository = new GachaRepository();
@@ -35,7 +37,13 @@ class GachaService {
     const availablePrizes = prizes.filter((p) => p.remaining > 0);
 
     if (availablePrizes.length === 0) {
-      // No prize won
+      // No prize won because there are no prizes left
+      await this.repository.createAttempt(userId);
+      return null;
+    }
+
+    // Chance to win nothing even if prizes remain
+    if (Math.random() < NO_PRIZE_CHANCE) {
       await this.repository.createAttempt(userId);
       return null;
     }
