@@ -13,6 +13,10 @@ class GachaRepository {
     return GachaPrize.findOneAndUpdate({ id }, { remaining }, { new: true });
   }
 
+  async updatePrizeById(id, data) {
+    return GachaPrize.findOneAndUpdate({ id }, data, { new: true });
+  }
+
   async createAttempt(userId, prizeId = null) {
     const attempt = new GachaAttempt({ userId, prizeWon: prizeId });
     return attempt.save();

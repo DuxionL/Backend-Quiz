@@ -6,5 +6,6 @@ module.exports = (db) =>
       name: { type: String, required: true },
       quota: { type: Number, required: true },
       remaining: { type: Number, required: true },
+      rate: { type: Number, required: true },
     })
   );

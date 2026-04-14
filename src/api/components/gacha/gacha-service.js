@@ -1,7 +1,6 @@
 const GachaRepository = require('./gacha-repository');
 
-const NO_PRIZE_CHANCE = 0.2; // 20% chance to win nothing even when prizes remain
-
+const NO_PRIZE_CHANCE = 0.2;
 class GachaService {
   constructor() {
     this.repository = new GachaRepository();
@@ -9,11 +8,17 @@ class GachaService {
 
   async initializePrizes() {
     const prizes = [
-      { id: 1, name: 'Emas 10 gram', quota: 1, remaining: 1 },
-      { id: 2, name: 'Smartphone X', quota: 5, remaining: 5 },
-      { id: 3, name: 'Smartwatch Y', quota: 10, remaining: 10 },
-      { id: 4, name: 'Voucher Rp100.000', quota: 100, remaining: 100 },
-      { id: 5, name: 'Pulsa Rp50.000', quota: 500, remaining: 500 },
+      { id: 1, name: 'Emas 10 gram', quota: 1, remaining: 1, rate: 0.5 },
+      { id: 2, name: 'Smartphone X', quota: 5, remaining: 5, rate: 2.5 },
+      { id: 3, name: 'Smartwatch Y', quota: 10, remaining: 10, rate: 6 },
+      {
+        id: 4,
+        name: 'Voucher Rp100.000',
+        quota: 100,
+        remaining: 100,
+        rate: 15,
+      },
+      { id: 5, name: 'Pulsa Rp50.000', quota: 500, remaining: 500, rate: 76 },
     ];
 
     for (const prize of prizes) {
@@ -21,45 +26,58 @@ class GachaService {
       if (!existing) {
         const newPrize = new (require('../../../models').GachaPrize)(prize);
         await newPrize.save();
+      } else if (
+        existing.rate !== prize.rate ||
+        existing.name !== prize.name ||
+        existing.quota !== prize.quota
+      ) {
+        await this.repository.updatePrizeById(prize.id, {
+          name: prize.name,
+          quota: prize.quota,
+          rate: prize.rate,
+        });
       }
     }
   }
 
   async doGacha(userId) {
-    // Check daily limit
     const attemptsToday = await this.repository.getUserAttemptsToday(userId);
     if (attemptsToday.length >= 5) {
       throw new Error('Daily gacha limit exceeded');
     }
-
-    // Get available prizes
     const prizes = await this.repository.getPrizes();
     const availablePrizes = prizes.filter((p) => p.remaining > 0);
 
     if (availablePrizes.length === 0) {
-      // No prize won because there are no prizes left
       await this.repository.createAttempt(userId);
       return null;
     }
-
-    // Chance to win nothing even if prizes remain
     if (Math.random() < NO_PRIZE_CHANCE) {
       await this.repository.createAttempt(userId);
       return null;
     }
-
-    // Randomly select a prize
-    const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-    const wonPrize = availablePrizes[randomIndex];
-
-    // Decrement remaining
+    const totalRate = availablePrizes.reduce(
+      (sum, prize) => sum + (prize.rate || 0),
+      0
+    );
+    let randomRate = Math.random() * totalRate;
+    let wonPrize = null;
+    for (const prize of availablePrizes) {
+      randomRate -= prize.rate || 0;
+      if (randomRate <= 0) {
+        wonPrize = prize;
+        break;
+      }
+    }
+    if (!wonPrize) {
+      wonPrize = availablePrizes[availablePrizes.length - 1];
+    }
     await this.repository.updatePrizeRemaining(
       wonPrize.id,
       wonPrize.remaining - 1
     );
 
-    // Record attempt
-    const attempt = await this.repository.createAttempt(userId, wonPrize._id);
+    await this.repository.createAttempt(userId, wonPrize._id);
 
     return wonPrize;
   }

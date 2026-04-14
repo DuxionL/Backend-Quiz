@@ -14,9 +14,9 @@ class GachaController {
 
       const prize = await this.service.doGacha(userId);
       if (prize) {
-        res.json({ message: 'Congratulations! You won:', prize: prize.name });
+        res.json({ message: 'gratz, you won:', prize: prize.name });
       } else {
-        res.json({ message: 'No prize won this time. Try again!' });
+        res.json({ message: 'won quite literally nothing' });
       }
     } catch (error) {
       if (error.message === 'Daily gacha limit exceeded') {
